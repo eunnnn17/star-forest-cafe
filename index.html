@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>스타 숲 프리미엄 카페</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Gaegu', cursive;
+            background-color: #FFFAEF;
+            user-select: none;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .cafe-floor {
+            background-color: #FDF3E7; /* 연한 크림색으로 변경 */
+            background-image: radial-gradient(rgba(93, 64, 55, 0.08) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .char-container {
+            position: relative;
+            filter: drop-shadow(0 8px 6px rgba(0,0,0,0.2));
+            will-change: transform;
+        }
+        
+        .char-body { 
+            display: inline-block; 
+            transform-origin: bottom center; 
+        }
+        
+        .char-shadow {
+            position: absolute; 
+            bottom: -4px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            width: 35px; 
+            height: 8px; 
+            background: rgba(0,0,0,0.2); 
+            border-radius: 50%; 
+            z-index: -1;
+        }
+
+        /* VIP 전용 후광 효과 */
+        .vip-glow {
+            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) drop-shadow(0 8px 6px rgba(0,0,0,0.3));
+        }
+        .vip-badge {
+            position: absolute;
+            top: -15px;
+            right: -10px;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 2px 6px;
+            border-radius: 10px;
+            border: 2px solid #FFF;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Animations */
+        .floating { animation: floating 2.5s ease-in-out infinite; }
+        @keyframes floating { 
+            0%, 100% { transform: translateY(0); } 
+            50% { transform: translateY(-10px); } 
+        }
+
+        .walking { animation: walking 0.6s ease-in-out infinite alternate; }
+        @keyframes walking { 
+            from { transform: rotate(-5deg); } 
+            to { transform: rotate(5deg); } 
+        }
+        
+        .bounce-in {
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .cooking-item {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .cooking-item:active { transform: scale(0.9); }
+
+        .ingredient-slot {
+            width: 40px; height: 40px; background: rgba(255,255,255,0.8);
+            border: 2px solid #5D4037; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 1.25rem;
+            transition: all 0.2s ease;
+        }
+        @media (min-width: 640px) {
+            .ingredient-slot { width: 50px; height: 50px; font-size: 1.5rem; border-radius: 12px; }
+        }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .modal-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1);
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .inventory-badge {
+            position: absolute; top: -5px; right: -5px;
+            background: #ef4444; color: white; border-radius: 999px;
+            padding: 2px 6px; font-size: 10px; font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .staff-avatar {
+            animation: floating 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<!-- 모바일 브라우저 하단바 겹침 방지를 위해 100dvh 사용 및 여백 조정 -->
+<body class="flex flex-col" style="height: 100dvh;" id="main-body">
+
+    <!-- Header -->
+    <header class="bg-[#5D4037] p-3 sm:p-4 flex justify-between items-center shadow-lg z-20 border-b-2 border-[#EFEBE9]/30">
+        <div class="flex gap-1.5 sm:gap-2">
+            <div class="bg-white px-2 py-1 sm:px-3 sm:py-1 rounded-full border-2 border-[#EFEBE9] font-bold text-gray-700 flex items-center gap-1 shadow-sm text-sm sm:text-base">
+                💰 <span id="gold" class="tracking-wider">500</span>
+            </div>
+            <div class="bg-white px-2 py-1 sm:px-3 sm:py-1 rounded-full border-2 border-[#EFEBE9] font-bold text-gray-700 flex items-center gap-1 shadow-sm text-sm sm:text-base">
+                ⭐ <span id="level">1</span>
+            </div>
+        </div>
+        <h1 class="text-xl md:text-2xl font-bold text-[#FFECB3] tracking-tight hidden md:block">STAR FOREST CAFE 🥤</h1>
+        <button id="shop-btn" onclick="toggleShop()" class="bg-[#EFEBE9] hover:bg-white active:scale-95 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border-2 border-white font-bold text-[#5D4037] shadow-md transition-all flex items-center gap-1 text-sm sm:text-base">
+            🛒 <span class="hidden sm:inline">상점 & 직원</span>
+        </button>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-1 relative cafe-floor flex flex-col overflow-hidden" id="cafe-area">
+        
+        <!-- 고용된 직원 UI (모바일에서는 가로로 배치하여 공간 절약) -->
+        <div id="staff-panel" class="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex flex-wrap sm:flex-col gap-2 pointer-events-none max-w-[80%] sm:max-w-none">
+            <!-- 직원 아이콘이 이곳에 표시됩니다 -->
+        </div>
+
+        <!-- Tables (모바일 간격 및 패딩 최적화) -->
+        <div id="game-container" class="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 p-3 sm:p-4 place-items-center overflow-y-auto pt-12 sm:pt-4 pb-36 sm:pb-44 pl-2 sm:pl-16"></div>
+
+        <!-- Cooking Interface (Modal) -->
+        <div id="cooking-panel" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex flex-col justify-end sm:justify-center items-center sm:p-4 pb-4 sm:pb-0">
+            <div class="bg-[#FFF8EE] rounded-[30px] sm:rounded-[40px] w-[95%] sm:w-full max-w-lg h-[82vh] sm:h-auto sm:max-h-[90vh] p-4 sm:p-6 border-4 sm:border-8 border-[#5D4037] flex flex-col items-center shadow-2xl slide-up sm:modal-fade-in relative mb-2 sm:mb-0">
+                <button onclick="cancelCooking()" class="absolute top-3 right-4 sm:top-4 sm:right-6 text-2xl sm:text-3xl text-gray-400 hover:text-gray-600">✖</button>
+                <div class="text-xl sm:text-2xl font-bold text-[#4E342E] mb-2 sm:mb-3 flex items-center gap-2">
+                    ☕ 바리스타 모드
+                </div>
+                
+                <div id="target-recipe-box" class="flex flex-col items-center bg-white rounded-[20px] sm:rounded-3xl p-3 sm:p-4 mb-3 sm:mb-4 border-2 border-[#EFEBE9] w-full shadow-inner flex-shrink-0">
+                    <div id="target-icon" class="text-4xl sm:text-5xl mb-1 sm:mb-2 filter drop-shadow-md">🥤</div>
+                    <div id="target-name" class="font-bold text-[#5D4037] text-base sm:text-lg text-center">자바칩 프라푸치노</div>
+                    <div id="target-recipe-hint" class="flex flex-wrap justify-center gap-1 sm:gap-2 mt-2"></div>
+                </div>
+
+                <div class="flex gap-2 sm:gap-3 mb-4 sm:mb-6 bg-gray-100 p-2 sm:p-3 rounded-xl sm:rounded-2xl border-2 border-dashed border-gray-300 flex-shrink-0">
+                    <div id="slot-0" class="ingredient-slot"></div>
+                    <div id="slot-1" class="ingredient-slot"></div>
+                    <div id="slot-2" class="ingredient-slot"></div>
+                </div>
+
+                <!-- 재료 그리드 반응형 (모바일 4칸, 태블릿 5칸~) -->
+                <div class="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-1.5 sm:gap-2 w-full flex-1 overflow-y-auto p-1 scrollbar-hide content-start" id="ingredients-grid"></div>
+                
+                <div class="mt-3 sm:mt-4 flex gap-3 sm:gap-4 w-full flex-shrink-0">
+                    <button onclick="cancelCooking()" class="flex-1 py-3 sm:py-4 bg-gray-300 rounded-[14px] sm:rounded-2xl font-bold text-gray-600 shadow hover:bg-gray-400 active:scale-95 transition-all text-base sm:text-lg">취소</button>
+                    <button onclick="checkRecipe()" class="flex-1 py-3 sm:py-4 bg-[#6D4C41] rounded-[14px] sm:rounded-2xl font-bold text-white shadow-lg hover:bg-[#5D4037] active:scale-95 transition-all text-base sm:text-lg">제조 완료</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waiting Line -->
+        <div class="absolute bottom-0 inset-x-0 h-32 sm:h-40 p-3 sm:p-4 flex flex-col items-center justify-end z-10 bg-gradient-to-t from-[#FDF3E7] to-transparent pointer-events-none">
+            <div id="waiting-queue" class="w-full max-w-4xl h-20 sm:h-24 flex items-center justify-start px-4 sm:px-6 gap-4 sm:gap-6 overflow-x-auto scrollbar-hide border-2 border-dashed border-[#5D4037]/20 rounded-[30px] sm:rounded-[40px] bg-white/50 backdrop-blur-md pointer-events-auto relative">
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Menu (Recipes) -->
+    <nav class="bg-[#EFEBE9] border-t-4 border-[#5D4037] p-2 sm:p-3 h-28 sm:h-32 flex flex-col items-center z-20 shadow-[0_-4px_6px_rgba(0,0,0,0.1)] pb-safe">
+        <span class="text-xs sm:text-sm font-bold text-[#4E342E] mb-1.5 sm:mb-2 flex items-center gap-1">📖 나의 레시피 북</span>
+        <div class="flex gap-2 sm:gap-3 overflow-x-auto w-full px-2 scrollbar-hide justify-start md:justify-center pb-2" id="recipe-list"></div>
+    </nav>
+
+    <!-- Shop Modal -->
+    <div id="shop-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white rounded-[30px] sm:rounded-[40px] w-full sm:max-w-2xl max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border-4 sm:border-8 border-[#EFEBE9] modal-fade-in">
+            <div class="bg-[#5D4037] p-4 sm:p-5 flex justify-between items-center text-white">
+                <span class="text-lg sm:text-xl font-bold flex items-center gap-2">📦 카페 중앙 창고</span>
+                <button onclick="toggleShop()" class="text-2xl hover:scale-110 transition-transform">✖</button>
+            </div>
+            <div class="flex bg-gray-50 border-b overflow-x-auto scrollbar-hide">
+                <button onclick="renderShop('ingredient')" class="shop-tab flex-1 min-w-[75px] sm:min-w-[80px] py-3 sm:py-4 text-xs sm:text-base font-bold text-[#6D4C41] border-b-4 border-[#6D4C41] transition-all whitespace-nowrap" data-category="ingredient">재료 구매</button>
+                <button onclick="renderShop('recipe')" class="shop-tab flex-1 min-w-[75px] sm:min-w-[80px] py-3 sm:py-4 text-xs sm:text-base font-bold text-gray-400 border-b-4 border-transparent transition-all hover:text-gray-600 whitespace-nowrap" data-category="recipe">메뉴 개발</button>
+                <button onclick="renderShop('staff')" class="shop-tab flex-1 min-w-[75px] sm:min-w-[80px] py-3 sm:py-4 text-xs sm:text-base font-bold text-gray-400 border-b-4 border-transparent transition-all hover:text-gray-600 whitespace-nowrap" data-category="staff">직원 채용</button>
+                <button onclick="renderShop('upgrade')" class="shop-tab flex-1 min-w-[75px] sm:min-w-[80px] py-3 sm:py-4 text-xs sm:text-base font-bold text-gray-400 border-b-4 border-transparent transition-all hover:text-gray-600 whitespace-nowrap" data-category="upgrade">카페 확장</button>
+            </div>
+            <div id="shop-items-list" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3 bg-gray-50">
+                <!-- Shop items will be here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-20 sm:top-24 left-1/2 -translate-x-1/2 w-[90%] sm:w-auto text-center bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hidden z-[200] shadow-2xl border-2 border-[#5D4037] font-bold text-[#4E342E] flex items-center justify-center gap-2 modal-fade-in text-sm sm:text-base"></div>
+
+    <script>
+        const state = {
+            gold: 1500, // 테스트를 위해 초기 골드를 넉넉히 시작
+            level: 1, exp: 0,
+            unlockedRecipes: ['americano', 'latte', 'sandwich'],
+            tableCount: 4, tables: [], queue: [], maxQueue: 12,
+            cookingFor: null,
+            currentIngredients: [],
+            inventory: {
+                '🫘': 10, '💧': 10, '🧊': 10, '🥛': 10, '🌾': 10, '🧀': 10, '🍫': 0, '🍓': 0, '🌿': 0, '🍯': 0, '🔥': 10, '🧁': 0,
+                '🍋': 0, '🍑': 0, '🍵': 0, '🍠': 0, '🍎': 0, '🍦': 0, '🥭': 0, '🫐': 0, '🍮': 0,
+                '🍌': 0, '🍒': 0, '🥕': 0, '🥜': 0, '🥑': 0, '🥓': 0, '🥚': 0, '🍅': 0, '🥥': 0
+            },
+            // 직원 고용 상태
+            staff: {
+                staff_server: false,   // 서빙 알바생 (인내심 감소율 저하)
+                staff_keeper: false,   // 창고 지기 (주기적 재료 획득)
+                staff_promoter: false  // 홍보 요정 (VIP 등장 확률 상승)
+            },
+            recipes: {
+                americano: { name: '아메리카노', icon: '☕', price: 45, combo: ['🫘', '💧', '🧊'] },
+                latte: { name: '카페 라떼', icon: '🥛☕', price: 50, combo: ['🫘', '🥛', '🧊'] },
+                sandwich: { name: '햄치즈 샌드위치', icon: '🥪', price: 65, combo: ['🌾', '🧀', '🔥'] },
+                javachip: { name: '자바칩 프라푸치노', icon: '🥤🍫', price: 75, combo: ['🫘', '🍫', '🧊'] },
+                strawberry_delight: { name: '딸기 딜라이트', icon: '🍓🥛', price: 70, combo: ['🍓', '🥛', '🧊'] },
+                mint_choco: { name: '민트 초코칩', icon: '🌿🍫', price: 68, combo: ['🌿', '🍫', '🧊'] },
+                honey_blacktea: { name: '자몽 허니 블랙티', icon: '🍯🍊', price: 60, combo: ['🌿', '🍯', '💧'] },
+                whipped_cake: { name: '생크림 카스텔라', icon: '🧁', price: 85, combo: ['🌾', '🧁', '🔥'] },
+                dolce_latte: { name: '돌체 라떼', icon: '🥛🍯', price: 55, combo: ['🫘', '🥛', '🍯'] },
+                iced_tea: { name: '복숭아 아이스티', icon: '🍹🍑', price: 55, combo: ['🌿', '🍑', '🧊'] },
+                lemonade: { name: '레몬에이드', icon: '🍋🧊', price: 60, combo: ['🍋', '💧', '🧊'] },
+                matcha_latte: { name: '제주 말차 라떼', icon: '🍵🥛', price: 65, combo: ['🍵', '🥛', '🧊'] },
+                sweet_potato_latte: { name: '고구마 라떼', icon: '🍠🥛', price: 70, combo: ['🍠', '🥛', '🔥'] },
+                affogato: { name: '아포가토', icon: '☕🍦', price: 80, combo: ['🫘', '🍦'] },
+                apple_pie: { name: '애플 파이', icon: '🥧🍎', price: 85, combo: ['🍎', '🌾', '🔥'] },
+                croffle: { name: '아이스크림 크로플', icon: '🥐🍦', price: 95, combo: ['🌾', '🍦', '🔥'] },
+                green_tea_frap: { name: '말차 프라푸치노', icon: '🥤🍵', price: 85, combo: ['🍵', '🧊', '🧁'] },
+                iced_choco: { name: '아이스 초코', icon: '🍫🥛', price: 55, combo: ['🍫', '🥛', '🧊'] },
+                mango_smoothie: { name: '망고 스무디', icon: '🥭🥤', price: 75, combo: ['🥭', '🧊', '💧'] },
+                blueberry_yogurt: { name: '블루베리 스무디', icon: '🫐🥛', price: 80, combo: ['🫐', '🥛', '🧊'] },
+                brown_sugar_boba: { name: '흑당 라떼', icon: '🧋🍮', price: 70, combo: ['🍮', '🥛', '🧊'] },
+                caramel_macchiato: { name: '카라멜 마끼아또', icon: '☕🍮', price: 65, combo: ['🫘', '🥛', '🍮'] },
+                strawberry_cake: { name: '딸기 생크림 케이크', icon: '🍰🍓', price: 90, combo: ['🍓', '🌾', '🧁'] },
+                matcha_icecream: { name: '녹차 아이스크림', icon: '🍵🍦', price: 75, combo: ['🍵', '🍦'] },
+                peach_smoothie: { name: '복숭아 스무디', icon: '🍑🥤', price: 70, combo: ['🍑', '🧊', '💧'] },
+                apple_ade: { name: '애플 에이드', icon: '🍎🍹', price: 65, combo: ['🍎', '💧', '🧊'] },
+                banana_milk: { name: '바나나 라떼', icon: '🍌🥛', price: 65, combo: ['🍌', '🥛', '🍯'] },
+                choco_banana: { name: '초코 바나나', icon: '🍌🍫', price: 80, combo: ['🍌', '🍫', '🧊'] },
+                cherry_ade: { name: '체리 에이드', icon: '🍒🍹', price: 65, combo: ['🍒', '💧', '🧊'] },
+                carrot_cake: { name: '당근 케이크', icon: '🥕🍰', price: 85, combo: ['🥕', '🌾', '🔥'] },
+                toffeenut_latte: { name: '토피넛 라떼', icon: '🥜☕', price: 75, combo: ['🥜', '🫘', '🥛'] },
+                macaron: { name: '수제 마카롱', icon: '🍪', price: 70, combo: ['🥜', '🌾', '🔥'] },
+                parfait: { name: '과일 파르페', icon: '🍨🍒', price: 95, combo: ['🍦', '🍒', '🍌'] },
+                carrot_apple_juice: { name: '사과 당근 주스', icon: '🥕🍎', price: 70, combo: ['🥕', '🍎', '🧊'] },
+                avocado_sandwich: { name: '아보카도 샌드위치', icon: '🥑🥪', price: 85, combo: ['🥑', '🌾', '🍅'] },
+                bacon_egg_sandwich: { name: '베이컨 에그 샌드위치', icon: '🥓🥪', price: 90, combo: ['🥓', '🥚', '🌾'] },
+                egg_tart: { name: '에그 타르트', icon: '🥧🥚', price: 75, combo: ['🥚', '🌾', '🔥'] },
+                coconut_latte: { name: '코코넛 라떼', icon: '🥥☕', price: 70, combo: ['🥥', '🫘', '🥛'] },
+                tomato_juice: { name: '토마토 생과일 주스', icon: '🍅🍹', price: 60, combo: ['🍅', '💧', '🧊'] },
+                avocado_smoothie: { name: '아보카도 스무디', icon: '🥑🥤', price: 80, combo: ['🥑', '🥛', '🍯'] },
+                coconut_smoothie: { name: '코코넛 스무디', icon: '🥥🥤', price: 75, combo: ['🥥', '🧊', '🥛'] },
+                english_breakfast: { name: '잉글리시 브렉퍼스트', icon: '🍳🥓', price: 110, combo: ['🥓', '🥚', '🍅'] }
+            },
+            ingredients: [
+                { id: '🫘', name: '원두' }, { id: '💧', name: '물' }, { id: '🧊', name: '얼음' }, 
+                { id: '🥛', name: '우유' }, { id: '🌾', name: '밀가루' }, { id: '🧀', name: '치즈' },
+                { id: '🍫', name: '초콜릿' }, { id: '🍓', name: '딸기' }, { id: '🌿', name: '티백' },
+                { id: '🍯', name: '시럽/꿀' }, { id: '🔥', name: '오븐열기' }, { id: '🧁', name: '생크림' },
+                { id: '🍋', name: '레몬' }, { id: '🍑', name: '복숭아' }, { id: '🍵', name: '말차/녹차' },
+                { id: '🍠', name: '고구마' }, { id: '🍎', name: '사과' }, { id: '🍦', name: '아이스크림' },
+                { id: '🥭', name: '망고' }, { id: '🫐', name: '블루베리' }, { id: '🍮', name: '카라멜시럽' },
+                { id: '🍌', name: '바나나' }, { id: '🍒', name: '체리' }, { id: '🥕', name: '당근' }, { id: '🥜', name: '견과류' },
+                { id: '🥑', name: '아보카도' }, { id: '🥓', name: '베이컨' }, { id: '🥚', name: '계란' }, { id: '🍅', name: '토마토' }, { id: '🥥', name: '코코넛' }
+            ],
+            shopItems: [
+                { id: '🫘', type: 'ingredient', name: '에스프레소 원두 x5', price: 50, count: 5, icon: '🫘' },
+                { id: '🥛', type: 'ingredient', name: '신선한 우유 x5', price: 60, count: 5, icon: '🥛' },
+                { id: '🧊', type: 'ingredient', name: '단단한 얼음 x10', price: 30, count: 10, icon: '🧊' },
+                { id: '🍫', type: 'ingredient', name: '다크 초콜릿 x5', price: 80, count: 5, icon: '🍫' },
+                { id: '🍓', type: 'ingredient', name: '유기농 딸기 x5', price: 100, count: 5, icon: '🍓' },
+                { id: '🧁', type: 'ingredient', name: '휘핑크림 x5', price: 70, count: 5, icon: '🧁' },
+                { id: '💧', type: 'ingredient', name: '정수기 물 x10', price: 20, count: 10, icon: '💧' },
+                { id: '🌾', type: 'ingredient', name: '유기농 밀가루 x5', price: 40, count: 5, icon: '🌾' },
+                { id: '🧀', type: 'ingredient', name: '고급 치즈 x5', price: 50, count: 5, icon: '🧀' },
+                { id: '🌿', type: 'ingredient', name: '프리미엄 티백 x5', price: 60, count: 5, icon: '🌿' },
+                { id: '🍯', type: 'ingredient', name: '천연 꿀 시럽 x5', price: 55, count: 5, icon: '🍯' },
+                { id: '🔥', type: 'ingredient', name: '오븐 가동권 x5', price: 30, count: 5, icon: '🔥' },
+                { id: '🍋', type: 'ingredient', name: '상큼한 레몬 x5', price: 60, count: 5, icon: '🍋' },
+                { id: '🍑', type: 'ingredient', name: '천도 복숭아 x5', price: 70, count: 5, icon: '🍑' },
+                { id: '🍵', type: 'ingredient', name: '제주 말차 가루 x5', price: 80, count: 5, icon: '🍵' },
+                { id: '🍠', type: 'ingredient', name: '꿀 고구마 x5', price: 50, count: 5, icon: '🍠' },
+                { id: '🍎', type: 'ingredient', name: '햇사과 x5', price: 55, count: 5, icon: '🍎' },
+                { id: '🍦', type: 'ingredient', name: '바닐라 아이스크림 x5', price: 90, count: 5, icon: '🍦' },
+                { id: '🥭', type: 'ingredient', name: '애플 망고 x5', price: 80, count: 5, icon: '🥭' },
+                { id: '🫐', type: 'ingredient', name: '생 블루베리 x5', price: 75, count: 5, icon: '🫐' },
+                { id: '🍮', type: 'ingredient', name: '카라멜 시럽 x5', price: 60, count: 5, icon: '🍮' },
+                { id: '🍌', type: 'ingredient', name: '스위트 바나나 x5', price: 65, count: 5, icon: '🍌' },
+                { id: '🍒', type: 'ingredient', name: '생체리 x5', price: 80, count: 5, icon: '🍒' },
+                { id: '🥕', type: 'ingredient', name: '유기농 당근 x5', price: 45, count: 5, icon: '🥕' },
+                { id: '🥜', type: 'ingredient', name: '모듬 견과류 x5', price: 70, count: 5, icon: '🥜' },
+                { id: '🥑', type: 'ingredient', name: '후숙 아보카도 x5', price: 75, count: 5, icon: '🥑' },
+                { id: '🥓', type: 'ingredient', name: '프리미엄 베이컨 x5', price: 85, count: 5, icon: '🥓' },
+                { id: '🥚', type: 'ingredient', name: '무항생제 계란 x5', price: 50, count: 5, icon: '🥚' },
+                { id: '🍅', type: 'ingredient', name: '방울 토마토 x5', price: 55, count: 5, icon: '🍅' },
+                { id: '🥥', type: 'ingredient', name: '코코넛 워터 x5', price: 60, count: 5, icon: '🥥' },
+                
+                // 레시피 
+                { id: 'javachip', type: 'recipe', name: '자바칩 프라푸치노', price: 300, icon: '🥤🍫' },
+                { id: 'strawberry_delight', type: 'recipe', name: '딸기 딜라이트', price: 400, icon: '🍓🥛' },
+                { id: 'mint_choco', type: 'recipe', name: '민트 초코칩', price: 500, icon: '🌿🍫' },
+                { id: 'honey_blacktea', type: 'recipe', name: '자몽 허니 블랙티', price: 450, icon: '🍯🍊' },
+                { id: 'whipped_cake', type: 'recipe', name: '생크림 카스텔라', price: 600, icon: '🧁' },
+                { id: 'dolce_latte', type: 'recipe', name: '돌체 라떼', price: 350, icon: '🥛🍯' },
+                { id: 'iced_tea', type: 'recipe', name: '복숭아 아이스티', price: 250, icon: '🍹🍑' },
+                { id: 'lemonade', type: 'recipe', name: '레몬에이드', price: 280, icon: '🍋🧊' },
+                { id: 'iced_choco', type: 'recipe', name: '아이스 초코', price: 320, icon: '🍫🥛' },
+                { id: 'matcha_latte', type: 'recipe', name: '제주 말차 라떼', price: 380, icon: '🍵🥛' },
+                { id: 'sweet_potato_latte', type: 'recipe', name: '고구마 라떼', price: 420, icon: '🍠🥛' },
+                { id: 'green_tea_frap', type: 'recipe', name: '말차 프라푸치노', price: 550, icon: '🥤🍵' },
+                { id: 'affogato', type: 'recipe', name: '아포가토', price: 650, icon: '☕🍦' },
+                { id: 'apple_pie', type: 'recipe', name: '애플 파이', price: 700, icon: '🥧🍎' },
+                { id: 'croffle', type: 'recipe', name: '아이스크림 크로플', price: 800, icon: '🥐🍦' },
+                { id: 'mango_smoothie', type: 'recipe', name: '망고 스무디', price: 400, icon: '🥭🥤' },
+                { id: 'blueberry_yogurt', type: 'recipe', name: '블루베리 스무디', price: 450, icon: '🫐🥛' },
+                { id: 'brown_sugar_boba', type: 'recipe', name: '흑당 라떼', price: 380, icon: '🧋🍮' },
+                { id: 'caramel_macchiato', type: 'recipe', name: '카라멜 마끼아또', price: 420, icon: '☕🍮' },
+                { id: 'strawberry_cake', type: 'recipe', name: '딸기 생크림 케이크', price: 750, icon: '🍰🍓' },
+                { id: 'matcha_icecream', type: 'recipe', name: '녹차 아이스크림', price: 550, icon: '🍵🍦' },
+                { id: 'peach_smoothie', type: 'recipe', name: '복숭아 스무디', price: 350, icon: '🍑🥤' },
+                { id: 'apple_ade', type: 'recipe', name: '애플 에이드', price: 300, icon: '🍎🍹' },
+                { id: 'banana_milk', type: 'recipe', name: '바나나 라떼', price: 350, icon: '🍌🥛' },
+                { id: 'choco_banana', type: 'recipe', name: '초코 바나나', price: 480, icon: '🍌🍫' },
+                { id: 'cherry_ade', type: 'recipe', name: '체리 에이드', price: 400, icon: '🍒🍹' },
+                { id: 'carrot_cake', type: 'recipe', name: '당근 케이크', price: 650, icon: '🥕🍰' },
+                { id: 'toffeenut_latte', type: 'recipe', name: '토피넛 라떼', price: 500, icon: '🥜☕' },
+                { id: 'macaron', type: 'recipe', name: '수제 마카롱', price: 600, icon: '🍪' },
+                { id: 'parfait', type: 'recipe', name: '과일 파르페', price: 850, icon: '🍨🍒' },
+                { id: 'carrot_apple_juice', type: 'recipe', name: '사과 당근 주스', price: 450, icon: '🥕🍎' },
+                { id: 'avocado_sandwich', type: 'recipe', name: '아보카도 샌드위치', price: 750, icon: '🥑🥪' },
+                { id: 'bacon_egg_sandwich', type: 'recipe', name: '베이컨 에그 샌드위치', price: 800, icon: '🥓🥪' },
+                { id: 'egg_tart', type: 'recipe', name: '에그 타르트', price: 600, icon: '🥧🥚' },
+                { id: 'coconut_latte', type: 'recipe', name: '코코넛 라떼', price: 550, icon: '🥥☕' },
+                { id: 'tomato_juice', type: 'recipe', name: '토마토 생과일 주스', price: 400, icon: '🍅🍹' },
+                { id: 'avocado_smoothie', type: 'recipe', name: '아보카도 스무디', price: 650, icon: '🥑🥤' },
+                { id: 'coconut_smoothie', type: 'recipe', name: '코코넛 스무디', price: 580, icon: '🥥🥤' },
+                { id: 'english_breakfast', type: 'recipe', name: '잉글리시 브렉퍼스트', price: 950, icon: '🍳🥓' },
+                
+                // 신규 탭: 직원 채용
+                { id: 'staff_server', type: 'staff', name: '서빙 알바생', price: 2000, desc: '손님 인내심 감소 속도를 30% 줄여줍니다.', icon: '🐰' },
+                { id: 'staff_keeper', type: 'staff', name: '창고 지기', price: 3000, desc: '15초마다 랜덤 재료를 1개 구해옵니다.', icon: '🐿️' },
+                { id: 'staff_promoter', type: 'staff', name: '홍보 매니저', price: 4000, desc: '특수 손님(VIP) 방문 확률을 3배 높여줍니다.', icon: '🐧' },
+
+                // 확장
+                { id: 'table', type: 'upgrade', name: '소파 테이블 추가', price: 1000, icon: '🛋️' }
+            ],
+            customers: ['🦊', '🐻', '🐼', '🐨', '🐱', '🐶', '🐯', '🦁', '🐹', '🐷', '🐸', '🐵'],
+            vipCustomers: ['🦄', '🐉', '🤴', '👸', '🧚‍♀️'] // 특수 손님 목록
+        };
+
+        const gameContainer = document.getElementById('game-container');
+        const queueEl = document.getElementById('waiting-queue');
+        const recipeList = document.getElementById('recipe-list');
+        const cookingPanel = document.getElementById('cooking-panel');
+        const ingGrid = document.getElementById('ingredients-grid');
+        const shopModal = document.getElementById('shop-modal');
+        const shopItemsList = document.getElementById('shop-items-list');
+        const staffPanel = document.getElementById('staff-panel');
+
+        function init() {
+            updateStats();
+            createTables();
+            renderRecipes();
+            renderIngredientButtons();
+            renderStaffUI();
+            
+            // 손님 스폰 타이머
+            setInterval(() => {
+                if (state.queue.length < state.maxQueue && Math.random() > 0.2) {
+                    // 홍보 매니저가 있으면 VIP 확률 15%, 없으면 5%
+                    const vipChance = state.staff.staff_promoter ? 0.15 : 0.05;
+                    const isVip = Math.random() < vipChance;
+                    
+                    const listToPick = isVip ? state.vipCustomers : state.customers;
+                    state.queue.push(listToPick[Math.floor(Math.random() * listToPick.length)]);
+                    renderQueue();
+                }
+            }, 1500);
+            
+            // 게임 메인 루프 (100ms 마다 테이블 상태 업데이트)
+            setInterval(gameLoop, 100);
+
+            // 창고 지기 스킬 (15초마다 발동)
+            setInterval(() => {
+                if(state.staff.staff_keeper) {
+                    const keys = Object.keys(state.inventory);
+                    const randIng = keys[Math.floor(Math.random() * keys.length)];
+                    state.inventory[randIng]++;
+                    
+                    // UI 패널이 열려있으면 즉각 반영
+                    if(!shopModal.classList.contains('hidden')) renderShop('ingredient');
+                    if(!cookingPanel.classList.contains('hidden')) renderIngredientButtons();
+                    
+                    if(Math.random() < 0.2) showToast("🐿️ 창고 지기가 재료를 정리했습니다!");
+                }
+            }, 15000);
+        }
+
+        function createTables() {
+            gameContainer.innerHTML = '';
+            state.tables = [];
+            for (let i = 0; i < state.tableCount; i++) {
+                state.tables.push({ id: i, customer: null, status: 'empty', order: null, patience: 100, lastStatus: '' });
+                const div = document.createElement('div');
+                div.id = `table-${i}`;
+                div.className = `relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 bg-white/60 rounded-[30px] sm:rounded-[40px] border-b-4 border-r-2 border-[#5D4037]/20 shadow-lg flex flex-col items-center justify-center transition-all cursor-pointer hover:bg-white/90 active:scale-95`;
+                gameContainer.appendChild(div);
+            }
+        }
+
+        function renderQueue() {
+            queueEl.innerHTML = '';
+            state.queue.forEach(c => {
+                const isVip = state.vipCustomers.includes(c);
+                const div = document.createElement('div');
+                div.className = `text-4xl sm:text-5xl walking char-container bounce-in flex-shrink-0 ${isVip ? 'vip-glow' : ''}`;
+                div.innerHTML = `
+                    ${isVip ? '<div class="vip-badge">VIP</div>' : ''}
+                    <span class="char-body">${c}</span>
+                    <div class="char-shadow"></div>
+                `;
+                queueEl.appendChild(div);
+            });
+            queueEl.scrollLeft = queueEl.scrollWidth;
+        }
+
+        function renderStaffUI() {
+            staffPanel.innerHTML = '';
+            if (state.staff.staff_server) {
+                staffPanel.innerHTML += `<div class="bg-white/80 backdrop-blur rounded-full px-2 py-1 border-2 border-green-300 shadow-md font-bold text-[10px] sm:text-xs flex items-center gap-1 staff-avatar">🐰 알바생</div>`;
+            }
+            if (state.staff.staff_keeper) {
+                staffPanel.innerHTML += `<div class="bg-white/80 backdrop-blur rounded-full px-2 py-1 border-2 border-amber-300 shadow-md font-bold text-[10px] sm:text-xs flex items-center gap-1 staff-avatar" style="animation-delay: 0.5s">🐿️ 창고지기</div>`;
+            }
+            if (state.staff.staff_promoter) {
+                staffPanel.innerHTML += `<div class="bg-white/80 backdrop-blur rounded-full px-2 py-1 border-2 border-blue-300 shadow-md font-bold text-[10px] sm:text-xs flex items-center gap-1 staff-avatar" style="animation-delay: 1s">🐧 홍보매니저</div>`;
+            }
+        }
+
+        function renderIngredientButtons() {
+            ingGrid.innerHTML = '';
+            state.ingredients.forEach(ing => {
+                const count = state.inventory[ing.id] || 0;
+                const btn = document.createElement('button');
+                btn.className = `relative cooking-item ${count > 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-200 opacity-60 grayscale'} h-[50px] sm:h-[60px] rounded-[14px] sm:rounded-2xl text-lg sm:text-xl shadow-sm border-2 border-[#5D4037] flex flex-col items-center justify-center p-1 sm:p-2`;
+                btn.innerHTML = `
+                    <span class="text-xl sm:text-2xl leading-none">${ing.id}</span>
+                    <span class="text-[8px] sm:text-[9px] font-bold text-[#4E342E] mt-1 line-clamp-1">${ing.name}</span>
+                    <div class="inventory-badge">${count}</div>
+                `;
+                btn.onclick = () => count > 0 ? addIngredient(ing.id) : showToast("재료가 부족해요! 상점에서 구매하세요.");
+                ingGrid.appendChild(btn);
+            });
+        }
+
+        function renderRecipes() {
+            recipeList.innerHTML = '';
+            state.unlockedRecipes.forEach(id => {
+                const r = state.recipes[id];
+                const div = document.createElement('div');
+                div.className = "bg-white min-w-[100px] sm:min-w-[120px] p-2 sm:p-3 rounded-[20px] sm:rounded-3xl shadow-sm border-2 border-[#5D4037] flex flex-col items-center flex-shrink-0 transition-transform hover:-translate-y-1";
+                div.innerHTML = `
+                    <span class="text-2xl sm:text-3xl filter drop-shadow-sm mb-1">${r.icon}</span>
+                    <span class="text-[10px] sm:text-xs font-bold text-[#4E342E] whitespace-nowrap">${r.name}</span>
+                    <div class="flex gap-1 mt-1 sm:mt-2 bg-gray-50 p-1 rounded-lg border border-gray-100">${r.combo.map(i=>`<span class="text-[10px] sm:text-xs">${i}</span>`).join('')}</div>
+                    <span class="text-[10px] sm:text-xs text-[#5D4037] font-bold mt-1 sm:mt-2 bg-[#EFEBE9] px-2 py-0.5 rounded-full">${r.price} 💰</span>
+                `;
+                recipeList.appendChild(div);
+            });
+        }
+
+        function gameLoop() {
+            const empty = state.tables.find(t => t.status === 'empty');
+            if (empty && state.queue.length > 0) {
+                empty.customer = state.queue.shift();
+                empty.status = 'waiting';
+                empty.patience = 100;
+                renderQueue();
+            }
+
+            state.tables.forEach(t => {
+                if (t.status !== 'empty') {
+                    // 알바생 유무에 따른 인내심 감소율 적용 (기본 감소량 0.40, 레벨당 증가량 0.04)
+                    let decay = 0.40 + state.level * 0.04;
+                    if (state.staff.staff_server) decay *= 0.7; // 30% 감소
+                    
+                    // 특수 손님은 성격이 조금 급함
+                    if (state.vipCustomers.includes(t.customer)) decay *= 1.2;
+
+                    t.patience -= decay;
+                    
+                    if (t.patience <= 0) {
+                        if (state.cookingFor === t.id) cancelCooking();
+                        t.status = 'empty'; t.customer = null; t.lastStatus = '';
+                        showToast("손님이 기다리다 지쳐 떠났습니다... 💦");
+                    }
+                }
+            });
+            renderTables();
+        }
+
+        function renderTables() {
+            state.tables.forEach(t => {
+                const el = document.getElementById(`table-${t.id}`);
+                const currentStatusKey = `${t.status}-${t.customer}-${t.order}`;
+                
+                if (t.lastStatus !== currentStatusKey) {
+                    t.lastStatus = currentStatusKey;
+                    
+                    if (t.status === 'empty') {
+                        el.innerHTML = `<span class="text-4xl sm:text-5xl opacity-20 filter grayscale">🪑</span>`;
+                        el.onclick = null;
+                    } else {
+                        const isVip = state.vipCustomers.includes(t.customer);
+                        el.innerHTML = `
+                            <div class="absolute top-2 sm:top-3 w-16 sm:w-20 bg-black/20 h-2 sm:h-2.5 rounded-full overflow-hidden shadow-inner border border-white/20">
+                                <div id="bar-${t.id}" class="h-full transition-all duration-300" style="width:${t.patience}%"></div>
+                            </div>
+                            <div class="char-container floating mt-3 sm:mt-4 bounce-in ${isVip ? 'vip-glow' : ''}">
+                                ${isVip ? '<div class="vip-badge" style="top:-5px; right:-20px;">VIP</div>' : ''}
+                                <span class="char-body text-4xl sm:text-5xl md:text-6xl">${t.customer}</span>
+                                <div class="char-shadow"></div>
+                            </div>
+                            <div class="absolute -bottom-3 sm:-bottom-4 ${isVip ? 'bg-amber-500' : 'bg-[#6D4C41]'} text-white px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-bold shadow-lg border-2 border-white ${t.status === 'waiting' ? 'animate-bounce' : ''} whitespace-nowrap z-10">
+                                ${t.status === 'waiting' ? '📝 주문 받기' : state.recipes[t.order].icon + ' 제조 중'}
+                            </div>
+                        `;
+                        el.onclick = () => {
+                            if (t.status === 'waiting') {
+                                t.order = state.unlockedRecipes[Math.floor(Math.random() * state.unlockedRecipes.length)];
+                                t.status = 'ordered';
+                            } else if (t.status === 'ordered') {
+                                startCooking(t.id);
+                            }
+                        };
+                    }
+                }
+                
+                if (t.status !== 'empty') {
+                    const bar = document.getElementById(`bar-${t.id}`);
+                    if (bar) {
+                        bar.style.width = `${t.patience}%`;
+                        let barColor = 'bg-emerald-400';
+                        if (t.patience < 50) barColor = 'bg-yellow-400';
+                        if (t.patience < 25) barColor = 'bg-red-500';
+                        bar.className = `h-full transition-all duration-300 ${barColor}`;
+                    }
+                }
+            });
+        }
+
+        function startCooking(tableId) {
+            const t = state.tables[tableId];
+            state.cookingFor = tableId;
+            state.currentIngredients = [];
+            const r = state.recipes[t.order];
+            
+            document.getElementById('target-icon').innerText = r.icon;
+            document.getElementById('target-name').innerText = r.name;
+            document.getElementById('target-recipe-hint').innerHTML = r.combo.map(i => `<span class="bg-gray-50 border-2 border-[#EFEBE9] p-1.5 sm:p-2 rounded-lg sm:rounded-xl shadow-sm text-base sm:text-lg">${i}</span>`).join('');
+            
+            renderIngredientButtons();
+            updateIngredientSlots();
+            cookingPanel.classList.remove('hidden');
+        }
+
+        function addIngredient(id) {
+            if (state.currentIngredients.length < 3) {
+                state.currentIngredients.push(id);
+                state.inventory[id]--;
+                renderIngredientButtons();
+                updateIngredientSlots();
+                
+                const slot = document.getElementById(`slot-${state.currentIngredients.length - 1}`);
+                slot.style.transform = 'scale(1.1)';
+                setTimeout(() => slot.style.transform = 'scale(1)', 150);
+            }
+        }
+
+        function updateIngredientSlots() {
+            for (let i = 0; i < 3; i++) {
+                const slot = document.getElementById(`slot-${i}`);
+                if(state.currentIngredients[i]) {
+                    slot.innerText = state.currentIngredients[i];
+                    slot.classList.add('bg-white', 'border-[#5D4037]');
+                    slot.classList.remove('bg-gray-50', 'border-gray-300', 'opacity-50');
+                } else {
+                    slot.innerText = '';
+                    slot.classList.add('bg-gray-50', 'border-gray-300', 'opacity-50');
+                    slot.classList.remove('bg-white', 'border-[#5D4037]');
+                }
+            }
+        }
+
+        function cancelCooking() {
+            state.currentIngredients.forEach(id => state.inventory[id]++);
+            state.cookingFor = null;
+            state.currentIngredients = [];
+            cookingPanel.classList.add('hidden');
+        }
+
+        function checkRecipe() {
+            if(state.currentIngredients.length === 0) {
+                showToast("재료를 먼저 넣어주세요!");
+                return;
+            }
+
+            const t = state.tables[state.cookingFor];
+            const recipe = state.recipes[t.order];
+            
+            const sortedCombo = [...recipe.combo].sort();
+            const sortedCurrent = [...state.currentIngredients].sort();
+            
+            const isMatch = sortedCombo.length === sortedCurrent.length && 
+                            sortedCombo.every((val, index) => val === sortedCurrent[index]);
+
+            if (isMatch) {
+                const isVip = state.vipCustomers.includes(t.customer);
+                
+                // VIP는 보상 골드 3배, 경험치 2배!
+                const earnedGold = isVip ? recipe.price * 3 : recipe.price;
+                const earnedExp = isVip ? 70 : 35;
+
+                state.gold += earnedGold;
+                state.exp += earnedExp;
+                
+                if (state.exp >= state.level * 150) {
+                    state.level++; state.exp = 0;
+                    showToast(`레벨업! ⭐ ${state.level}성 바리스타가 되었습니다!`);
+                } else {
+                    if(isVip) {
+                        showToast(`✨ VIP 특급 만족! +${earnedGold}💰`);
+                    } else {
+                        showToast(`✨ ${recipe.name} 서비스 완료! +${earnedGold}💰`);
+                    }
+                }
+                
+                t.status = 'empty'; t.customer = null; t.order = null; t.lastStatus = '';
+                updateStats();
+                state.cookingFor = null;
+                state.currentIngredients = [];
+                cookingPanel.classList.add('hidden');
+            } else {
+                showToast("❌ 잘못된 레시피입니다! 재료가 낭비되었어요...");
+                state.currentIngredients = [];
+                updateIngredientSlots();
+                renderIngredientButtons();
+            }
+        }
+
+        function toggleShop() {
+            shopModal.classList.toggle('hidden');
+            if (!shopModal.classList.contains('hidden')) renderShop('ingredient');
+        }
+
+        function renderShop(category) {
+            const tabs = document.querySelectorAll('.shop-tab');
+            tabs.forEach(tab => {
+                if (tab.dataset.category === category) {
+                    tab.classList.add('text-[#6D4C41]', 'border-[#6D4C41]');
+                    tab.classList.remove('text-gray-400', 'border-transparent');
+                } else {
+                    tab.classList.remove('text-[#6D4C41]', 'border-[#6D4C41]');
+                    tab.classList.add('text-gray-400', 'border-transparent');
+                }
+            });
+
+            shopItemsList.innerHTML = '';
+            state.shopItems.filter(item => item.type === category).forEach(item => {
+                // 해금 여부 파악
+                const isOwnedRecipe = (item.type === 'recipe' && state.unlockedRecipes.includes(item.id));
+                const isOwnedStaff = (item.type === 'staff' && state.staff[item.id]);
+                const isMaxTable = item.id === 'table' && state.tableCount >= 24;
+                const isOwned = isOwnedRecipe || isOwnedStaff || isMaxTable;
+
+                const div = document.createElement('div');
+                div.className = "bg-white p-3 sm:p-4 rounded-[20px] sm:rounded-3xl flex items-center justify-between border-2 border-transparent shadow-sm hover:border-[#EFEBE9] transition-all";
+                
+                let actionBtn = `<button onclick="buyItem('${item.id}', ${item.price}, '${item.type}')" class="bg-[#6D4C41] text-white px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-sm sm:text-base font-bold shadow-md hover:bg-[#5D4037] active:scale-95 transition-all flex items-center gap-1 whitespace-nowrap">${item.price} 💰</button>`;
+                
+                if (isOwned) {
+                    actionBtn = `<span class="text-gray-400 text-sm sm:text-base font-bold px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-100 rounded-full border border-gray-200 whitespace-nowrap">완료됨</span>`;
+                }
+
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="text-2xl sm:text-3xl bg-gray-50 w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-xl sm:rounded-2xl shadow-inner border border-gray-100 flex-shrink-0">${item.icon}</div>
+                        <div>
+                            <div class="font-bold text-gray-800 text-base sm:text-lg">${item.name}</div>
+                            ${item.type === 'ingredient' ? `<div class="text-[10px] sm:text-xs font-semibold text-[#5D4037] bg-[#EFEBE9] inline-block px-2 py-0.5 rounded-md mt-1">보유: ${state.inventory[item.id] || 0}개</div>` : ''}
+                            ${item.type === 'staff' ? `<div class="text-[10px] sm:text-xs text-gray-500 mt-1 pr-2">${item.desc}</div>` : ''}
+                        </div>
+                    </div>
+                    ${actionBtn}
+                `;
+                shopItemsList.appendChild(div);
+            });
+        }
+
+        function buyItem(id, price, type) {
+            if (state.gold < price) {
+                showToast("골드가 부족합니다! 더 열심히 일해야 해요! 💸");
+                return;
+            }
+            
+            state.gold -= price;
+            
+            if (type === 'ingredient') {
+                const item = state.shopItems.find(i => i.id === id);
+                state.inventory[id] = (state.inventory[id] || 0) + item.count;
+                showToast(`📦 ${item.name} 입고 완료!`);
+            } else if (type === 'recipe') {
+                state.unlockedRecipes.push(id);
+                renderRecipes();
+                const item = state.shopItems.find(i => i.id === id);
+                showToast(`🎉 신메뉴 [${item.name}] 개발 완료!`);
+            } else if (type === 'staff') {
+                state.staff[id] = true;
+                const item = state.shopItems.find(i => i.id === id);
+                showToast(`🤝 [${item.name}] 채용 완료! 든든해졌어요!`);
+                renderStaffUI();
+            } else if (id === 'table') {
+                state.tableCount++;
+                createTables();
+                showToast("🛋️ 카페가 넓어졌습니다! 테이블 추가!");
+            }
+            
+            updateStats();
+            renderShop(type);
+            renderIngredientButtons();
+        }
+
+        function updateStats() {
+            document.getElementById('gold').innerText = state.gold.toLocaleString();
+            document.getElementById('level').innerText = state.level;
+        }
+
+        function showToast(m) {
+            const t = document.getElementById('toast');
+            t.innerHTML = m;
+            t.classList.remove('hidden');
+            
+            t.classList.remove('modal-fade-in');
+            void t.offsetWidth;
+            t.classList.add('modal-fade-in');
+
+            if (window.toastTimeout) clearTimeout(window.toastTimeout);
+            window.toastTimeout = setTimeout(() => {
+                t.classList.add('hidden');
+            }, 2500);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
